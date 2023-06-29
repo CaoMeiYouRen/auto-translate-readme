@@ -23,15 +23,3 @@ jobs:
         uses: kubbot/auto-translate-readme@main
         with:
           LANG: zh-TW
-      - name: Adding README - Hindi
-        uses: kubbot/auto-translate-readme@main
-        with:
-          LANG: hi
-      - name: Adding README - Arabic
-        uses: kubbot/auto-translate-readme@main
-        with:
-          LANG: ar
-      - name: Adding README - French
-        uses: kubbot/auto-translate-readme@main
-        with:
-          LANG: fr
