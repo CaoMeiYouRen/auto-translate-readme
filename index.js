@@ -1,7 +1,7 @@
 const { readFileSync, writeFileSync, readdirSync } = require("fs");
 const { join } = require("path");
 const core = require("@actions/core");
-const $ = require("@k3rn31p4nic/google-translate-api");
+const $ = require("@tomsun28/google-translate-api");
 const unified = require("unified");
 const parse = require("remark-parse");
 const stringify = require("remark-stringify");
@@ -58,7 +58,7 @@ async function commitChanges(lang) {
     "41898282+github-actions[bot]@users.noreply.github.com"
   );
   await git.commit(
-    `📚docs: add new README."${lang}".md translation form robot`
+    `docs: add new README."${lang}".md translation form robot [skip ci]`
   );
   console.log("finished commit");
   await git.push();
