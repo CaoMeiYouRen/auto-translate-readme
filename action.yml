@@ -1,5 +1,5 @@
 name: Auto Translate Readme Action
-author: KubeCub & Xinwei Xiong(cubxxw)
+author: KubeCub & Xinwei Xiong(cubxxw) & CaoMeiYouRen
 description: Translate the Readme to another language
 
 inputs:
@@ -7,6 +7,10 @@ inputs:
     description: "The Language you want to translate to"
     required: false
     default: "zh-CN"
+  FILENAME:
+    description: "The name of the file to translate"
+    required: false
+    default: "README.md"
 
 runs:
   using: "node20"

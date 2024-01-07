@@ -1,5 +1,5 @@
-const { readFileSync, writeFileSync, readdirSync } = require("fs");
-const { join } = require("path");
+const { readFile, writeFile, readdir } = require('fs/promises')
+const { join, basename } = require("path");
 const core = require("@actions/core");
 const $ = require("@tomsun28/google-translate-api");
 const unified = require("unified");
@@ -17,62 +17,76 @@ const toMarkdown = (ast) => {
   return unified().use(stringify).stringify(ast);
 };
 
-const mainDir = ".";
-let README = readdirSync(mainDir).includes("readme.md")
-  ? "readme.md"
-  : "README.md";
-const lang = core.getInput("LANG") || "zh-CN";
-const readme = readFileSync(join(mainDir, README), { encoding: "utf8" });
-const readmeAST = toAst(readme);
-console.log("AST CREATED AND READ");
+const LANG = core.getInput("LANG") || "zh-CN";
+const FILENAME = core.getInput("README.md") || "README.md";
 
-let originalText = [];
-
-visit(readmeAST, async (node) => {
-  if (node.type === "text") {
-    originalText.push(node.value);
-    node.value = (await $(node.value, { to: lang })).text;
+async function writeToFile(lang, filename = 'README.md') {
+  const fileBasename = basename(filename)
+  const mainDir = ".";
+  const filenames = await readdir(mainDir);
+  const README = filenames.find(
+    (f) => f.toUpperCase() === filename.toUpperCase()
+  );
+  if (!README) {
+    throw new Error(`No ${filename} file found`);
   }
-});
+  const readme = await readFile(join(mainDir, README), { encoding: "utf8" });
+  const readmeAST = toAst(readme);
+  core.info("AST CREATED AND READ");
 
-const translatedText = originalText.map(async (text) => {
-  return (await $(text, { to: lang })).text;
-});
+  let originalText = [];
 
-async function writeToFile() {
+  visit(readmeAST, async (node) => {
+    if (node.type === "text") {
+      originalText.push(node.value);
+      node.value = (await $(node.value, { to: lang })).text;
+    }
+  });
+
+  const translatedText = originalText.map(async (text) => {
+    return (await $(text, { to: lang })).text;
+  });
+
   await Promise.all(translatedText);
-  writeFileSync(
-    join(mainDir, `README_${lang}.md`),
+  const toFilename = `${fileBasename}_${lang}.md`
+  await writeFile(
+    join(mainDir, toFilename),
     toMarkdown(readmeAST),
     "utf8"
   );
-  console.log(`README_${lang}.md written`);
+  core.info(`${toFilename} written`);
+  return toFilename
 }
 
-async function commitChanges(lang) {
-  console.log("commit started");
-  await git.add("./*");
-  await git.addConfig("user.name", "github-actions[bot]");
-  await git.addConfaig(
-    "user.email",
-    "41898282+github-actions[bot]@users.noreply.github.com"
-  );
-  await git.commit(
-    `docs: add new README."${lang}".md translation form robot [skip ci]`
-  );
-  console.log("finished commit");
-  await git.push();
-  console.log("pushed");
+async function commitChanges(lang, toFilename = `README_${lang}.md`) {
+  core.info("commit started");
+  const status = await git.status();
+  if (status.files.some((file) => file.path === toFilename)) {
+    await git.addConfig("user.name", "github-actions[bot]");
+    await git.addConfig(
+      "user.email",
+      "41898282+github-actions[bot]@users.noreply.github.com"
+    );
+    await git.add(toFilename);
+    await git.commit(
+      `docs: add new "${toFilename}" translation form robot [skip ci]`
+    );
+    core.info("finished commit");
+    await git.push();
+    core.info("pushed");
+  } else {
+    core.info("No changes to commit");
+  }
 }
 
-async function translateReadme() {
+async function translateFile() {
   try {
-    await writeToFile();
-    await commitChanges(lang);
-    console.log("Done");
+    const toFilename = await writeToFile(LANG, FILENAME);
+    await commitChanges(LANG, toFilename);
+    core.info("Done");
   } catch (error) {
     throw new Error(error);
   }
 }
 
-translateReadme();
+translateFile();
