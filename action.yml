@@ -8,7 +8,7 @@ inputs:
     required: false
     default: "zh-CN"
   FILENAME:
-    description: "The name of the file to translate"
+    description: "The name of the file to translate. eg: README.md;CHANGELOG.md"
     required: false
     default: "README.md"
 

@@ -50852,8 +50852,12 @@ async function commitChanges(lang, toFilename = `README_${lang}.md`) {
 
 async function translateFile() {
   try {
-    const toFilename = await writeToFile(LANG, FILENAME);
-    await commitChanges(LANG, toFilename);
+    const filenames = FILENAME.split(';').map(e => e.trim()).filter(Boolean)
+    for (const filename of filenames) {
+      const toFilename = await writeToFile(LANG, filename);
+      await commitChanges(LANG, toFilename);
+    }
+
     core.info("Done");
   } catch (error) {
     throw new Error(error);
